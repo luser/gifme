@@ -6,10 +6,14 @@ var es = new EventSource("/feed");
 es.addEventListener("gif", function(e) {
   var data = JSON.parse(e.data);
   console.log("got img url %s", data.url);
+  // TODO: use duration
   queue.push(data.url);
   if (queue.length == 1) {
     preloadNextImage();
   }
+});
+es.addEventListener("ping", function(e) {
+  console.log("server ping");
 });
 
 function preloadNextImage() {
@@ -37,5 +41,6 @@ function loadNextGif() {
     current_gif = (current_gif + 1) % gifs.length;
   }
   document.body.style.backgroundImage = "url(" + gifs[current_gif].src + ")";
+  // TODO: use duration
   setTimeout(loadNextGif, 10000);
 }
