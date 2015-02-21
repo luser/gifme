@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import feedparser
 import io
 import multiprocessing
 import multiprocessing.queues
@@ -12,7 +13,6 @@ import time
 
 from contextlib import contextmanager
 
-# http://www.reddit.com/r/gifs/.rss
 class GifManager(object):
     def __init__(self):
         self._nextid = 1
@@ -60,6 +60,30 @@ def find_gifs_thread(q):
         print 'Got URL %s' % data[0]
         gif_manager.add(data)
 
+def find_gifs_localfile():
+    '''
+    For testing, read the contents of /tmp/gifs.
+    '''
+    if not hasattr(find_gifs_localfile, 'last'):
+        find_gifs_localfile.last = 0
+    now = os.stat('/tmp/gifs').st_mtime
+    if now > find_gifs_localfile.last:
+        find_gifs_localfile.last = now
+        for gif in open('/tmp/gifs', 'r').read().splitlines():
+            gif = gif.strip()
+            if not gif:
+                continue
+            yield gif
+
+
+def find_gifs_rss():
+    # TODO: use if-modified-since
+    d = feedparser.parse('http://imgur.com/r/gifs/rss')
+    for e in d.entries:
+        for mc in e.get('media_content', []):
+            if mc['type'] == 'image/gif':
+                yield mc['url']
+
 def find_gifs_process(q):
     '''
     Find GIFs from wherever. Put tuples of (url, duration in milliseconds)
@@ -67,21 +91,16 @@ def find_gifs_process(q):
     '''
     # TODO: poll RSS feed
     s = set()
-    last = 0
     while True:
-        now = os.stat('/tmp/gifs').st_mtime
-        if now > last:
-            last = now
-            for gif in open('/tmp/gifs', 'r').read().splitlines():
-                gif = gif.strip()
-                if not gif or gif in s:
-                    continue
-                print 'Found new gif: %s' % gif
-                s.add(gif)
-                duration = get_gif_duration(gif)
-                if duration != 0:
-                    q.put((gif, duration))
-        time.sleep(1)
+        for gif in find_gifs_rss():
+            if gif in s:
+                continue
+            print 'Found new gif: %s' % gif
+            s.add(gif)
+            duration = get_gif_duration(gif)
+            if duration != 0:
+                q.put((gif, duration))
+        time.sleep(10)
 
 def find_gifs():
     '''
