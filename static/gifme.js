@@ -23,7 +23,7 @@ function preloadNextImage() {
   var src = queue[0];
   var event = "load";
   if (src.substr(0, 18) == "http://i.imgur.com" && useVideoBG)  {
-    src = src.substr(0, src.length - 4) + ".webm";
+    src = src.substr(0, src.length - 4) + ".mp4";
     loading = document.createElement("video");
     loading.autoplay = true;
     loading.loop = true;
