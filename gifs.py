@@ -2,8 +2,6 @@
 
 import feedparser
 import io
-import multiprocessing
-import multiprocessing.queues
 import os
 import Queue
 import re
@@ -50,16 +48,6 @@ class GifManager(object):
                 pass
 # Singleton instance
 gif_manager = GifManager()
-
-def find_gifs_thread(q):
-    '''
-    Wait for results from find_gifs_process on the Queue |q| and
-    add them to the singleton GifManager.
-    '''
-    while True:
-        data = q.get()
-        print 'Got URL %s' % data[0]
-        gif_manager.add(data)
 
 def find_gifs_localfile():
     '''
@@ -124,12 +112,11 @@ def find_gifs_facebook_group(group_id, access_token):
         except ValueError:
             return
 
-def find_gifs_process(q):
+def find_gifs_thread():
     '''
-    Find GIFs from wherever. Put tuples of (url, duration in milliseconds)
-    into the Queue |q|.
+    Find GIFs from wherever. Add tuples of (url, duration in milliseconds)
+    to the singleton GifManager
     '''
-    # TODO: poll RSS feed
     s = set()
     while True:
         for gif in find_gifs_rss():
@@ -139,19 +126,14 @@ def find_gifs_process(q):
             s.add(gif)
             duration = get_gif_duration(gif)
             if duration != 0:
-                q.put((gif, duration))
+                gif_manager.add((gif, duration))
         time.sleep(10)
 
 def find_gifs():
     '''
-    Kick off a Process to find GIFs, and a Thread to watch a Queue for
-    results and stick them into the singleton GifManager.
+    Kick off a Thread to find GIFs and stick them into the singleton GifManager.
     '''
-    q = multiprocessing.queues.SimpleQueue()
-    p = multiprocessing.Process(target=find_gifs_process, args=(q,))
-    p.daemon = True
-    p.start()
-    t = threading.Thread(target=find_gifs_thread, args=(q,))
+    t = threading.Thread(target=find_gifs_thread)
     t.daemon = True
     t.start()
 
