@@ -11,20 +11,9 @@ var MIN_DURATION = 5000;
 // Also let gifs loop at least this many times.
 var MIN_LOOPS = 2;
 var current_gif = -1;
+var es;
 var queue = [];
 var loading;
-var es = new EventSource("/feed");
-es.addEventListener("gif", function(e) {
-  var data = JSON.parse(e.data);
-  console.log("got img url %s, duration %d", data.url, data.duration);
-  queue.push(data);
-  if (queue.length == 1) {
-    preloadNextImage();
-  }
-});
-es.addEventListener("ping", function(e) {
-  console.log("server ping");
-});
 
 function preloadNextImage() {
   if (queue.length == 0)
@@ -37,8 +26,19 @@ function preloadNextImage() {
     loading.autoplay = true;
     loading.loop = true;
     event = "canplaythrough";
+    loading.addEventListener("loadedmetadata", function meta() {
+      loading.removeEventListener("loadedmetadata", meta);
+      checkLoadImmediately(loading);
+    });
   } else {
     loading = new Image();
+  }
+  function checkLoadImmediately(e) {
+    if (current_gif == -1) {
+      gifs.push(e);
+      //e.displayed = true;
+      //loadNextGif();
+    }
   }
   // HTMLMediaElement has .duration...
   loading.duration_ = queue[0].duration;
@@ -53,16 +53,45 @@ function preloadNextImage() {
       while (gifs.length > MAX_GIFS) {
         gifs.shift();
       }
+      if (current_gif == -1) {
+        loadNextGif();
+      }
     }
     loading = null;
     setTimeout(preloadNextImage, 0);
   });
   loading.src = src;
   console.log("preloading %s", loading.src);
-  if (current_gif == -1) {
-    gifs.push(loading);
-    loading.displayed = true;
-    loadNextGif();
+  // Can't stick Image in the DOM right away because we need
+  // its dimensions to position it.
+}
+
+function center(element) {
+  if (!element.naturalWidth) {
+    if (element instanceof HTMLVideoElement) {
+      element.naturalWidth = element.videoWidth;
+      element.naturalHeight = element.videoHeight;
+    } else {
+      element.naturalWidth = element.width;
+      element.naturalHeight = element.height;
+    }
+  }
+  var elRatio = element.naturalWidth / element.naturalHeight;
+  var winRatio = window.innerWidth / window.innerHeight;
+  // Not sure if this is all perfect.
+  if (elRatio > winRatio) {
+    element.style.width = "100%";
+    element.style.height = "auto";
+    element.style.position = "absolute";
+    var newHeight = window.innerWidth/elRatio;
+    element.style.top = (window.innerHeight - newHeight)/2 + "px";
+    element.style.margin = "";
+  } else {
+    element.style.width = "auto";
+    element.style.height = "100%";
+    element.style.position = "";
+    element.style.top = "";
+    element.style.margin = "auto";
   }
 }
 
@@ -79,12 +108,8 @@ function loadNextGif() {
   }
   var gif = gifs[current_gif];
   console.log("using gif %s", gif.src);
-  if (gif instanceof HTMLImageElement) {
-    document.body.style.backgroundImage = "url(" + gifs[current_gif].src + ")";
-  } else {
-    document.mozSetImageElement("videobg", gif);
-    document.body.style.backgroundImage = "-moz-element(#videobg)";
-  }
+  center(gif);
+  document.body.replaceChild(gif, document.body.firstChild);
   // Let gifs loop at least MIN_LOOPS times, but maybe more if they're short.
   var duration = 0;
   var loops = 0;
@@ -94,3 +119,23 @@ function loadNextGif() {
   }
   setTimeout(loadNextGif, duration);
 }
+
+addEventListener("DOMContentLoaded", function() {
+  center(document.getElementById("i"));
+  es = new EventSource("/feed");
+  es.addEventListener("gif", function(e) {
+    var data = JSON.parse(e.data);
+    console.log("got img url %s, duration %d", data.url, data.duration);
+    queue.push(data);
+    if (queue.length == 1) {
+      preloadNextImage();
+    }
+  });
+  es.addEventListener("ping", function(e) {
+    console.log("server ping");
+  });
+});
+
+addEventListener("resize", function() {
+  center(document.body.firstChild);
+});

@@ -2,12 +2,11 @@ html, body {
     width:100%;
     height:100%;
     margin:0;
+    overflow: hidden;
 }
 body {
-  background-image: url(loading.gif);
-  background-position: center center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  background-size: contain;
   background-color: #464646;
+}
+img, video {
+    display: block;
 }
