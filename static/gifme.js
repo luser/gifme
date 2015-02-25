@@ -1,3 +1,6 @@
+/* Any copyright is dedicated to the Public Domain.
+ * http://creativecommons.org/publicdomain/zero/1.0/ */
+
 var useVideoBG = !!document.mozSetImageElement;
 var gifs = [];
 // Don't keep more than this many gifs in rotation.
