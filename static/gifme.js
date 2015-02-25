@@ -1,7 +1,7 @@
 /* Any copyright is dedicated to the Public Domain.
  * http://creativecommons.org/publicdomain/zero/1.0/ */
 
-var useVideo = document.createElement("video").canPlayType('video/mp4;codecs="avc1.42E01E, mp4a.40.2"') in {"probably": true, "maybe": true};
+var useVideo = document.createElement("video").canPlayType('video/mp4;codecs="avc1.42E01E, mp4a.40.2"') in {"probably": true, "maybe": true} && navigator.userAgent.indexOf("iPhone") == -1;
 var gifs = [];
 // Don't keep more than this many gifs in rotation.
 var MAX_GIFS = 10;
@@ -23,7 +23,6 @@ function preloadNextImage() {
   if (src.substr(0, 18) == "http://i.imgur.com" && useVideo)  {
     src = src.substr(0, src.length - 4) + ".mp4";
     loading = document.createElement("video");
-    loading.autoplay = true;
     loading.loop = true;
     event = "canplaythrough";
     loading.addEventListener("loadedmetadata", function meta() {
@@ -109,7 +108,14 @@ function loadNextGif() {
   var gif = gifs[current_gif];
   console.log("using gif %s", gif.src);
   center(gif);
-  document.body.replaceChild(gif, document.body.firstChild);
+  var old = document.body.firstChild;
+  if (old instanceof HTMLVideoElement) {
+    old.pause();
+  }
+  if (gif instanceof HTMLVideoElement) {
+    gif.play();
+  }
+  document.body.replaceChild(gif, old);
   // Let gifs loop at least MIN_LOOPS times, but maybe more if they're short.
   var duration = 0;
   var loops = 0;
