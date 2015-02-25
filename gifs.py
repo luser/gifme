@@ -6,6 +6,7 @@ import multiprocessing
 import multiprocessing.queues
 import os
 import Queue
+import re
 import requests
 import struct
 import threading
@@ -76,6 +77,26 @@ def find_gifs_localfile():
             yield gif
 
 
+def fetch_if_modified(url, date):
+    headers = {}
+    if date:
+        headers['If-Modified-Since'] = date
+    r = requests.get(url, headers=headers)
+    if r.status_code == 200:
+        return r.text, r.headers.get('date', None)
+    elif r.status_code == 304:
+        return None, r.headers.get('date', None)
+    return None, None
+
+def fixup_or_reject_url(url):
+    if url.endswith('.gifv'):
+        return url[:-1]
+    if '/gallery/' in url:
+        return None
+    if 'imgur.com' in url and not url.endswith('.gif'):
+        return url.replace('imgur.com', 'i.imgur.com') + '.gif'
+    return url
+
 def find_gifs_rss():
     # TODO: use if-modified-since
     d = feedparser.parse('http://imgur.com/r/gifs/rss')
@@ -83,6 +104,25 @@ def find_gifs_rss():
         for mc in e.get('media_content', []):
             if mc['type'] == 'image/gif':
                 yield mc['url']
+
+def find_gifs_facebook_group(group_id, access_token):
+    r = requests.get('https://graph.facebook.com/v2.2/{group_id}/feed?access_token={access_token}'.format(group_id=group_id, access_token=access_token))
+    if r.status_code == 200:
+        try:
+            link_re = re.compile('(https?://[^\s]+)')
+            for post in r.json()['data']:
+                link = post.get('link', None)
+                if link:
+                    yield link
+                message = post.get('message', None)
+                if message:
+                    match = link_re.search(message)
+                    if match:
+                        link = fixup_or_reject_url(match.group(0))
+                        if link:
+                            yield link
+        except ValueError:
+            return
 
 def find_gifs_process(q):
     '''
