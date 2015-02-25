@@ -1,7 +1,7 @@
 /* Any copyright is dedicated to the Public Domain.
  * http://creativecommons.org/publicdomain/zero/1.0/ */
 
-var useVideoBG = !!document.mozSetImageElement;
+var useVideo = document.createElement("video").canPlayType('video/mp4;codecs="avc1.42E01E, mp4a.40.2"') in {"probably": true, "maybe": true};
 var gifs = [];
 // Don't keep more than this many gifs in rotation.
 var MAX_GIFS = 10;
@@ -20,7 +20,7 @@ function preloadNextImage() {
     return;
   var src = queue[0].url;
   var event = "load";
-  if (src.substr(0, 18) == "http://i.imgur.com" && useVideoBG)  {
+  if (src.substr(0, 18) == "http://i.imgur.com" && useVideo)  {
     src = src.substr(0, src.length - 4) + ".mp4";
     loading = document.createElement("video");
     loading.autoplay = true;
@@ -36,8 +36,8 @@ function preloadNextImage() {
   function checkLoadImmediately(e) {
     if (current_gif == -1) {
       gifs.push(e);
-      //e.displayed = true;
-      //loadNextGif();
+      e.displayed = true;
+      loadNextGif();
     }
   }
   // HTMLMediaElement has .duration...
