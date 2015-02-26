@@ -92,9 +92,13 @@ def fixup_or_reject_url(url):
         return url.replace('imgur.com', 'i.imgur.com') + '.gif'
     return url
 
-def find_gifs_rss():
-    # TODO: use if-modified-since
-    d = feedparser.parse('http://imgur.com/r/gifs/rss')
+def find_gifs_rss(info):
+    data, date = fetch_if_modified('http://imgur.com/r/gifs/rss',
+                                   info['last_date'])
+    info['last_date'] = date
+    if data is None:
+        return
+    d = feedparser.parse(data)
     for e in d.entries:
         for mc in e.get('media_content', []):
             if mc['type'] == 'image/gif':
@@ -125,8 +129,9 @@ def find_gifs_thread():
     to the singleton GifManager
     '''
     s = set()
+    info = {'last_date': None}
     while True:
-        for gif in find_gifs_rss():
+        for gif in find_gifs_rss(info):
             if gif in s:
                 continue
             print 'Found new gif: %s' % gif
@@ -134,7 +139,7 @@ def find_gifs_thread():
             duration = get_gif_duration(gif)
             if duration != 0:
                 gif_manager.add((gif, duration))
-        time.sleep(10)
+        time.sleep(30)
 
 def find_gifs():
     '''
