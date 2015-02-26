@@ -17,6 +17,7 @@ import time
 from contextlib import contextmanager
 
 class GifManager(object):
+    MAX_GIFS = 10
     def __init__(self):
         self._nextid = 1
         self._gifs = []
@@ -45,6 +46,8 @@ class GifManager(object):
         data = (self._nextid,) + gif
         self._nextid += 1
         self._gifs.append(data)
+        while len(self._gifs) > GifManager.MAX_GIFS:
+            self._gifs.pop(0)
         for q in self._queues:
             try:
                 q.put_nowait(data)
