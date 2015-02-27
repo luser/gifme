@@ -24,6 +24,7 @@ function preloadNextImage() {
     src = src.substr(0, src.length - 4) + ".mp4";
     loading = document.createElement("video");
     loading.loop = true;
+    loading.preload = "auto";
     event = "canplaythrough";
     loading.addEventListener("loadedmetadata", function meta() {
       loading.removeEventListener("loadedmetadata", meta);
@@ -106,7 +107,6 @@ function loadNextGif() {
     current_gif = (current_gif + 1) % gifs.length;
   }
   var gif = gifs[current_gif];
-  console.log("using gif %s", gif.src);
   center(gif);
   var old = document.body.firstChild;
   if (old instanceof HTMLVideoElement) {
@@ -123,6 +123,7 @@ function loadNextGif() {
     duration += gif.duration_;
     loops++;
   }
+  console.log("using gif %s for %ds", gif.src, duration);
   setTimeout(loadNextGif, duration);
 }
 
