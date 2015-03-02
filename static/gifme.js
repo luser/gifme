@@ -1,7 +1,11 @@
 /* Any copyright is dedicated to the Public Domain.
  * http://creativecommons.org/publicdomain/zero/1.0/ */
 
-var useVideo = document.createElement("video").canPlayType('video/mp4;codecs="avc1.42E01E, mp4a.40.2"') in {"probably": true, "maybe": true} && navigator.userAgent.indexOf("iPhone") == -1;
+var isiPhone = navigator.userAgent.indexOf("iPhone") != -1;
+var isChromeAndroid = navigator.userAgent.indexOf("Chrome") != -1 &&
+      navigator.userAgent.indexOf("Android") != -1;
+var crappyMobileBrowser = isiPhone || isChromeAndroid;
+var useVideo = document.createElement("video").canPlayType('video/mp4;codecs="avc1.42E01E, mp4a.40.2"') in {"probably": true, "maybe": true} && !crappyMobileBrowser ;
 var gifs = [];
 // Don't keep more than this many gifs in rotation.
 var MAX_GIFS = 10;
