@@ -134,7 +134,7 @@ def find_gifs_thread():
         for gif in find_gifs_rss(info):
             if gif in s:
                 continue
-            print 'Found new gif: %s' % gif
+            #print 'Found new gif: %s' % gif
             s.add(gif)
             duration = get_gif_duration(gif)
             if duration != 0:

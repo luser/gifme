@@ -30,7 +30,7 @@ class feed:
         last_id = int(web.ctx.env.get('HTTP_LAST_EVENT_ID', 0))
         with gif_manager.listen() as gifs:
             for data in gifs:
-                print 'Got data: %s' % str(data)
+                #print 'Got data: %s' % str(data)
                 if data is None:
                     yield "event: ping\ndata: 1\n\n"
                 else:
